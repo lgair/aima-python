@@ -1,11 +1,17 @@
-# a1.py
+# a1.py advice for manhattan distance taken from
+# https://stackoverflow.com/questions/39759721/calculating-the-manhattan-distance-in-the-eight-puzzle
+# https://www.geeksforgeeks.org/sum-manhattan-distances-pairs-points/
+
 
 from search import *
 import time
 import random
 
-
 # ...
+SOLVED_STATE = (1, 2, 3, 4, 5, 6, 7, 8, 0)
+NUM_RANDOM_MOVES = 60
+
+
 # ______________________________________________________________________________
 # A* heuristics
 
@@ -78,12 +84,68 @@ class EightPuzzle(Problem):
 
         return sum(s != g for (s, g) in zip(node.state, self.goal))
 
-    # allows printing of multiple puzzles
+    def manhattan(self, node):
+        # Goal state is puzzle = (1, 2, 3, 4, 5, 6, 7, 8, 0)
+        # for my simplicity index has been shortened to `i`
+        # adapted from the manhattan function in test_search.py
+        currentstate = node.state  # Grab the current state of the EightPuzzle object passed via the node
+        i_target = {0: [2, 2], 1: [0, 0], 2: [0, 1], 3: [0, 2], 4: [1, 0], 5: [1, 1], 6: [1, 2], 7: [2, 0], 8: [2, 1]}
+        i_state = {}
+        index = [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
+        # x = 0
+        # y = 0
+
+        for i in range(len(currentstate)):
+            i_state[currentstate[i]] = index[i]  # initialize i_state dictionary
+
+        manhattan_distance_x = 0
+        manhattan_distance_y = 0
+
+        for i in range(9):
+            manhattan_distance_x += abs(i_target[i][0] - i_state[i][0])  # two indices because index was 2d array
+            manhattan_distance_y += abs(i_target[i][1] - i_state[i][1])
+
+        return manhattan_distance_y + manhattan_distance_x
+
+    def a_max(self, node):
+        """ Return the biggest heuristic value from either manhattan or h
+        Always grantee most efficient result and larger euristic dominates
+        the smaller one"""
+
+        h = self.h(node)
+        manhattan = self.manhattan(node)
+        return max(h, manhattan)
+
     def get_state(self):
+        """Obtain Current state of EightPuzzle Object, could be useful for display"""
         return self.initial
 
 
 #  ____________________________End EightPuzzle__________________________________________________
+
+
+# ----------------------------- A* Search variations!-------------------------------------------
+def astar_search(problem, h=None, display=False):
+    """A* search is best-first graph search with f(n) = g(n)+h(n).
+    You need to specify the h function when you call astar_search, or
+    else in your Problem subclass."""
+    h = memoize(h or problem.h, 'h')
+    return best_first_graph_search(problem, lambda n: n.path_cost + h(n), display)
+
+
+# Modify astar_search to use Manhattan Distance Heuristic
+def astar_manhattan(problem, h=None):
+    """Modification on A* search to use Manhattan Distance as Heuristic"""
+
+    h = memoize(h or problem.manhattan, 'h')
+    return best_first_graph_search(problem, lambda n: n.path_cost + h(n))
+
+
+# modified astar_search to use maximum of misplaced tile heuristic
+def astar_max(problem, h=None):
+    h = memoize(h or problem.a_max, 'h')
+    return best_first_graph_search(problem, lambda n: n.path_cost + h(n))
+
 
 def best_first_graph_search(problem, f, display=False):
     """Search the nodes with the lowest f scores first.
@@ -99,13 +161,15 @@ def best_first_graph_search(problem, f, display=False):
     frontier.append(node)
     explored = set()
     FledTheFrontier = 0  # Tracks how many nodes have fled the frontier (were removed from it) yeeehaw
+    test = 0
     while frontier:
+        test += 1
         node = frontier.pop()
         FledTheFrontier += 1  # Account for all fleeing nodes
         if problem.goal_test(node.state):
             if display:
                 print(len(explored), "paths have been expanded and", len(frontier), "paths remain in the frontier")
-            return node
+            return [node, FledTheFrontier]  # Return FledFromFrontier here so that we may access it outside the func
         explored.add(node.state)
         for child in node.expand(problem):
             if child.state not in explored and child not in frontier:
@@ -115,10 +179,6 @@ def best_first_graph_search(problem, f, display=False):
                     del frontier[child]
                     frontier.append(child)
     return None
-
-
-SOLVED_STATE = (1, 2, 3, 4, 5, 6, 7, 8, 0)
-NUM_RANDOM_MOVES = 40
 
 
 def make_rand_8puzzle():
@@ -167,32 +227,49 @@ def display(state):
     print()
     print()
 
-    def f():
-
-        start_time = time.time()
-
-        # ... do something ...
-
-        elapsed_time = time.time() - start_time
-
-        print(f'elapsed time (in seconds): {elapsed_time}s')
-
 
 def eight_puzzle_analysis():
-    print('generating 10 puzzles for stats')
+    #print("data for 10 puzzles using A* search using misplaced tile Heuristic (default)")
     puzzles = make_n_puzzles(10)
+
     for puzz in puzzles:
-        display(puzz.get_state())
+        # puzz = make_rand_8puzzle()
 
-        for puzz in puzzles:
-            start_time = time.time_ns()
-            finished_puzzle = astar_search(puzz)
-            elapsed_time = (time.time_ns() - start_time)/1000000000
-        print("data for A* search using misplaced tile Heuristic (default)")
-        print('TIME:                    ', elapsed_time)
-        print('LENGHT:                  ', finished_puzzle.path_cost)
-        print('# of Frontier Fugitives: ', finished_puzzle)
+        # print("unsolved puzzle")
+        # display(puzz.get_state())
+        start_time = time.time_ns()
+        finished_puzzle = astar_search(puzz)
+        elapsed_time = (time.time_ns() - start_time) / 1000000000
+        # Output data in CSV Format where first column is TIME (s), Second is LENGTH, and Third is FRONTIER-
+        print(elapsed_time, end='')
+        print(',', finished_puzzle[0].path_cost, end='')
+        print(',', finished_puzzle[1])
+        # print('TIME in seconds:         ', elapsed_time)
+        # print('LENGHT:                  ', finished_puzzle[0].path_cost)
+        # print('# of Frontier Fugitives: ', finished_puzzle[1])
+        # print("solved puzzle")
+        # print(finished_puzzle[0])
+    print()
+    #print("data for 10 puzzles using modified A* with manhattan distance heuristic")
+    for puzz in puzzles:
+        start_time = time.time_ns()
+        finished_puzzle = astar_manhattan(puzz)
+        elapsed_time = (time.time_ns() - start_time) / 1000000000
+        # Output data in CSV Format where first column is TIME (s), Second is LENGTH, and Third is FRONTIER-
+        print(elapsed_time, end='')
+        print(',', finished_puzzle[0].path_cost, end='')
+        print(',', finished_puzzle[1])
 
+    print()
+    #print("data for 10 puzzles using modified A* with max misplaced distance heuristic")
+    for puzz in puzzles:
+        start_time = time.time_ns()
+        finished_puzzle = astar_max(puzz)
+        elapsed_time = (time.time_ns() - start_time) / 1000000000
+        # Output data in CSV Format where first column is TIME (s), Second is LENGTH, and Third is FRONTIER-
+        print(elapsed_time, end='')
+        print(',', finished_puzzle[0].path_cost, end='')
+        print(',', finished_puzzle[1])
 
 
 eight_puzzle_analysis()
