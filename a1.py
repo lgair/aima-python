@@ -9,11 +9,13 @@ import random
 
 # ...
 SOLVED_STATE = (1, 2, 3, 4, 5, 6, 7, 8, 0)
-NUM_RANDOM_MOVES = 60
+NUM_RANDOM_MOVES = 30
+#PYCHARM_DEBUG = True
 
 
 # ______________________________________________________________________________
 # A* heuristics
+# Duck Puzzle
 
 
 class DuckPuzzle(Problem):
@@ -31,7 +33,6 @@ class DuckPuzzle(Problem):
 
     def find_blank_square(self, state):
         """Return the index of the blank square in a given state"""
-
         return state.index(0)
 
     def actions(self, state):
@@ -41,11 +42,10 @@ class DuckPuzzle(Problem):
 
         possible_actions = ['UP', 'DOWN', 'LEFT', 'RIGHT']
         index_blank_square = self.find_blank_square(state)
-        unable_to_move_up = (1, 2, 5, 6)
-        unable_to_move_down = (3, 7, 8, 0)
-        unable_to_move_left = (1, 3, 7)
-        unable_to_move_right = (2, 6, 0)
-
+        unable_to_move_up = (0, 1, 4, 5)
+        unable_to_move_down = (2, 6, 7, 8)
+        unable_to_move_left = (0, 2, 6)
+        unable_to_move_right = (1, 5, 8)
         # check which tuples the blank square is in and remove corresponding move option
         if index_blank_square in unable_to_move_left:
             possible_actions.remove('LEFT')
@@ -60,46 +60,41 @@ class DuckPuzzle(Problem):
 
     def result(self, state, action):
         """ Given state and action, return a new state that is the result of the action.
-        Action is assumed to be a valid action in the state """
-
+        Action is assumed to be a valid action in the state
+        duckPuzzle Shape should induce some special cases here.
+            1 2
+            3 4 5 6
+              7 8 *
+        the numbers at index's 0, 1, and 2 will forever be trapped in that corner of the house. Therefore index
+        tile 3 is a special case. Tile index 0, 1, & 2 are also their own special cases.
+        """
         # blank is the index of the blank square
         blank = self.find_blank_square(state)
         new_state = list(state)
-        """duckPuzzle Shape should induce some special cases here.
-        1 2 
-        3 4 5 6
-          7 8 *
-        the numbers at index's 1, 2, and 3 will forever be trapped in that corner of the house. Therefore index 4 can never move right 
-        """
-
-        special_deltas = {'UP': -2, 'DOWN': 2, 'LEFT': -1, 'RIGHT': 1}
-        special_blanks = (0, 2, 6, 8)
-
-        delta = {'UP': -3, 'DOWN': 3, 'LEFT': -1, 'RIGHT': 1}
-
-        if blank in special_blanks:
-            neighbor = blank + special_deltas[action]
+        delta = {'UP': -3, 'DOWN': 3, 'LEFT': -1, 'RIGHT': 1}  # for most numbers in normal places
+        delta_case1 = {'UP': -2, 'DOWN': 3, 'LEFT': -1, 'RIGHT': 1}  # specifically for tile at index #3
+        delta_case2 = {'UP': -2, 'DOWN': 2, 'LEFT': -1, 'RIGHT': 1}  # Special case for tiles at index 0, 1, & 2
+        blank_case2 = (0, 1, 2)
+        if blank is 3:
+            neighbor = blank + delta_case1[action]
+        elif blank in blank_case2:
+            neighbor = blank + delta_case2[action]
         else:
             neighbor = blank + delta[action]
-
         new_state[blank], new_state[neighbor] = new_state[neighbor], new_state[blank]
-
         return tuple(new_state)
 
     def goal_test(self, state):
         """ Given a state, return True if state is a goal state or False, otherwise """
-
         return state == self.goal
 
     def check_solvability(self, state):
         """ Checks if the given state is solvable """
-
         inversion = 0
         for i in range(len(state)):
             for j in range(i + 1, len(state)):
                 if (state[i] > state[j]) and state[i] != 0 and state[j] != 0:
                     inversion += 1
-
         return inversion % 2 == 0
 
     def h(self, node):
@@ -116,19 +111,13 @@ class DuckPuzzle(Problem):
         i_target = {0: [2, 2], 1: [0, 0], 2: [0, 1], 3: [0, 2], 4: [1, 0], 5: [1, 1], 6: [1, 2], 7: [2, 0], 8: [2, 1]}
         i_state = {}
         index = [[0, 0], [0, 1], [0, 2], [1, 0], [1, 1], [1, 2], [2, 0], [2, 1], [2, 2]]
-        # x = 0
-        # y = 0
-
         for i in range(len(currentstate)):
             i_state[currentstate[i]] = index[i]  # initialize i_state dictionary
-
         manhattan_distance_x = 0
         manhattan_distance_y = 0
-
         for i in range(9):
             manhattan_distance_x += abs(i_target[i][0] - i_state[i][0])  # two indices because index was 2d array
             manhattan_distance_y += abs(i_target[i][1] - i_state[i][1])
-
         return manhattan_distance_y + manhattan_distance_x
 
     def a_max(self, node):
@@ -143,9 +132,52 @@ class DuckPuzzle(Problem):
     def get_state(self):
         """Obtain Current state of EightPuzzle Object, could be useful for display"""
         return self.initial
+# END duck_puzzle class
 
 
-# END duck PUZZLE
+def display_Dpuzz(state):
+    """ Helper function that displays duck_puzzle formatted properly (like a duck)"""
+    # I am going to call the state the "board". Since the state is a tuple, all the object values are stored in an
+    # array so that they may be printed. The blank square or 0 will be notated by a *
+    # logically the same as display(state) above but for duckpuzzle()
+    board = [0, 0, 0, 0, 0, 0, 0, 0, 0]  # Initialize the array with zeroes
+    for i in range(9):
+        board[i] = state[i]
+        if board[i] == 0:
+            board[i] = '*'
+        # logic below for printing a duck array QUACK
+        if i <= 1:
+            print(board[i], ' ', end='')
+            if i == 1:
+                print()
+        elif 5 >= i > 1:
+            print(board[i], ' ', end='')
+            if i == 5:
+                print()
+                print('   ', end='')
+        else:
+            print(board[i], ' ', end='')
+    print()
+    print()
+
+
+def make_rand_duckPuzz():
+    state = SOLVED_STATE
+    puzz = DuckPuzzle(state)
+
+    for _ in range(NUM_RANDOM_MOVES):
+        possible_actions = puzz.actions(state=state)  # All currently valid moves for 0
+        action = random.choice(possible_actions)  # Pick a valid move at random
+        state = puzz.result(state=state, action=action)  # Apply it to random state, set state to new state
+    return DuckPuzzle(state)  # Will always be a solvable puzzle as valid moves have been applied to a solved state
+
+
+def make_n_Dpuzz(n):  # Create an Array of n Random puzzles
+    puzzles = []
+    for _ in range(n):
+        puzzles.append(make_rand_duckPuzz())
+    return puzzles
+#-----------------End Duck Puzzle functions-----------------------
 
 
 class EightPuzzle(Problem):
@@ -254,7 +286,47 @@ class EightPuzzle(Problem):
         return self.initial
 
 
-#  ____________________________End EightPuzzle__________________________________________________
+def display(state):
+    """ Helper function that displays the state of 8 puzzle (tuple) in 3x3 form"""
+    # I am going to call the state the "board". Since the state is a tuple, all the object values are stored in an
+    # array so that they may be printed. The blank square or 0 will be notated by a *
+    board = [0, 0, 0, 0, 0, 0, 0, 0, 0]  # Initialize the array with zeroes
+
+    for i in range(9):
+        board[i] = state[i]
+        if board[i] == 0:
+            board[i] = '*'
+        # logic below for printing a 3x3 array
+        if i <= 2:
+            print(board[i], ' ', end='')
+            if i == 2:
+                print()
+        elif 5 >= i > 2:
+            print(board[i], ' ', end='')
+            if i == 5:
+                print()
+        else:
+            print(board[i], ' ', end='')
+    print()
+    print()
+
+
+def make_rand_8puzzle():
+    state = SOLVED_STATE
+    puzz = EightPuzzle(state)
+    for _ in range(NUM_RANDOM_MOVES):
+        possible_actions = puzz.actions(state=state)  # All currently valid moves for 0
+        action = random.choice(possible_actions)  # Pick a valid move at random
+        state = puzz.result(state=state, action=action)  # Apply it to random state, set state to new state
+    return EightPuzzle(state)  # Will always be a solvable puzzle as valid moves have been applied to a solved state
+
+
+def make_n_puzzles(n):  # Create an Array of n Random puzzles
+    puzzles = []
+    for _ in range(n):
+        puzzles.append(make_rand_8puzzle())
+    return puzzles
+# -------------------------------------End EightPuzzle Functions--------------------------------
 
 
 # ----------------------------- A* Search variations!-------------------------------------------
@@ -269,7 +341,6 @@ def astar_search(problem, h=None, display=False):
 # Modify astar_search to use Manhattan Distance Heuristic
 def astar_manhattan(problem, h=None):
     """Modification on A* search to use Manhattan Distance as Heuristic"""
-
     h = memoize(h or problem.manhattan, 'h')
     return best_first_graph_search(problem, lambda n: n.path_cost + h(n))
 
@@ -278,6 +349,9 @@ def astar_manhattan(problem, h=None):
 def astar_max(problem, h=None):
     h = memoize(h or problem.a_max, 'h')
     return best_first_graph_search(problem, lambda n: n.path_cost + h(n))
+
+
+# ---------------------------------END A* Search Variations-------------------------------------
 
 
 def best_first_graph_search(problem, f, display=False):
@@ -312,102 +386,7 @@ def best_first_graph_search(problem, f, display=False):
                     del frontier[child]
                     frontier.append(child)
     return None
-
-
-def make_rand_8puzzle():
-    state = SOLVED_STATE
-    puzz = EightPuzzle(state)
-
-    for _ in range(NUM_RANDOM_MOVES):
-        possible_actions = puzz.actions(state=state)  # All currently valid moves for 0
-        action = random.choice(possible_actions)  # Pick a valid move at random
-        state = puzz.result(state=state, action=action)  # Apply it to random state, set state to new state
-
-    return EightPuzzle(state)  # Will always be a solvable puzzle as valid moves have been applied to a solved state
-
-
-def make_n_puzzles(n):  # Create an Array of n Random puzzles
-    puzzles = []
-
-    for _ in range(n):
-        puzzles.append(make_rand_8puzzle())
-
-    return puzzles
-
-
-# Helper function that displays the state of 8 puzzle (tuple) in 3x3 form
-def display(state):
-    # I am going to call the state the "board". Since the state is a tuple, all the object values are stored in an
-    # array so that they may be printed. The blank square or 0 will be notated by a *
-    board = [0, 0, 0, 0, 0, 0, 0, 0, 0]  # Initialize the array with zeroes
-
-    for i in range(9):
-        board[i] = state[i]
-        if board[i] == 0:
-            board[i] = '*'
-        # logic below for printing a 3x3 array
-        if i <= 2:
-            print(board[i], ' ', end='')
-            if i == 2:
-                print()
-        elif 5 >= i > 2:
-            print(board[i], ' ', end='')
-            if i == 5:
-                print()
-        else:
-            print(board[i], ' ', end='')
-
-    print()
-    print()
-
-
-def make_rand_duckPuzz():
-    state = SOLVED_STATE
-    puzz = DuckPuzzle(state)
-
-    for _ in range(NUM_RANDOM_MOVES):
-        possible_actions = puzz.actions(state=state)  # All currently valid moves for 0
-        action = random.choice(possible_actions)  # Pick a valid move at random
-        state = puzz.result(state=state, action=action)  # Apply it to random state, set state to new state
-
-    return DuckPuzzle(state)  # Will always be a solvable puzzle as valid moves have been applied to a solved state
-
-
-def make_n_Dpuzz(n):  # Create an Array of n Random puzzles
-    puzzles = []
-
-    for _ in range(n):
-        puzzles.append(make_rand_duckPuzz())
-
-    return puzzles
-
-
-# Helper function that displays the state of 8 puzzle (tuple) in 3x3 form
-def display_Dpuzz(state):
-    # I am going to call the state the "board". Since the state is a tuple, all the object values are stored in an
-    # array so that they may be printed. The blank square or 0 will be notated by a *
-    # logically the same as display(state) above but for duckpuzzle()
-    board = [0, 0, 0, 0, 0, 0, 0, 0, 0]  # Initialize the array with zeroes
-
-    for i in range(9):
-        board[i] = state[i]
-        if board[i] == 0:
-            board[i] = '*'
-        # logic below for printing a 3x3 array
-        if i <= 1:
-            print(board[i], ' ', end='')
-            if i == 1:
-                print()
-        elif 5 >= i > 1:
-            print(board[i], ' ', end='')
-            if i == 5:
-                print()
-                print('   ', end='')
-        else:
-            print(board[i], ' ', end='')
-
-    print()
-    print()
+# ----------Small Functions to generate 10 (or n) puzzles for some statistical analysis----------
 
 
 def eight_puzzle_analysis():
@@ -415,9 +394,6 @@ def eight_puzzle_analysis():
     puzzles = make_n_puzzles(10)
 
     for puzz in puzzles:
-        # puzz = make_rand_8puzzle()
-
-        # print("unsolved puzzle")
         display(puzz.get_state())
         start_time = time.time_ns()
         finished_puzzle = astar_search(puzz)
@@ -426,12 +402,8 @@ def eight_puzzle_analysis():
         print(elapsed_time, end='')
         print(',', finished_puzzle[0].path_cost, end='')
         print(',', finished_puzzle[1])
-        # print('TIME in seconds:         ', elapsed_time)
-        # print('LENGHT:                  ', finished_puzzle[0].path_cost)
-        # print('# of Frontier Fugitives: ', finished_puzzle[1])
-        # print("solved puzzle")
-        # print(finished_puzzle[0])
     print()
+
     # print("data for 10 puzzles using modified A* with manhattan distance heuristic")
     for puzz in puzzles:
         start_time = time.time_ns()
@@ -441,8 +413,8 @@ def eight_puzzle_analysis():
         print(elapsed_time, end='')
         print(',', finished_puzzle[0].path_cost, end='')
         print(',', finished_puzzle[1])
-
     print()
+
     # print("data for 10 puzzles using modified A* with max misplaced distance heuristic")
     for puzz in puzzles:
         start_time = time.time_ns()
@@ -455,16 +427,10 @@ def eight_puzzle_analysis():
 
 
 def duck_puzzle_analysis():
-    display_Dpuzz(make_rand_duckPuzz().get_state())
-
-    # print("data for 10 puzzles using A* search using misplaced tile Heuristic (default)")
-    puzzles = make_n_puzzles(10)
+    puzzles = make_n_Dpuzz(10)
 
     for puzz in puzzles:
-        # puzz = make_rand_8puzzle()
-
-        # print("unsolved puzzle")
-        # display(puzz.get_state())
+        display_Dpuzz(puzz.get_state())
         start_time = time.time_ns()
         finished_puzzle = astar_search(puzz)
         elapsed_time = (time.time_ns() - start_time) / 1000000000
@@ -472,11 +438,6 @@ def duck_puzzle_analysis():
         print(elapsed_time, end='')
         print(',', finished_puzzle[0].path_cost, end='')
         print(',', finished_puzzle[1])
-        # print('TIME in seconds:         ', elapsed_time)
-        # print('LENGHT:                  ', finished_puzzle[0].path_cost)
-        # print('# of Frontier Fugitives: ', finished_puzzle[1])
-        # print("solved puzzle")
-        # print(finished_puzzle[0])
     print()
     # print("data for 10 puzzles using modified A* with manhattan distance heuristic")
     for puzz in puzzles:
@@ -487,7 +448,6 @@ def duck_puzzle_analysis():
         print(elapsed_time, end='')
         print(',', finished_puzzle[0].path_cost, end='')
         print(',', finished_puzzle[1])
-
     print()
     # print("data for 10 puzzles using modified A* with max misplaced distance heuristic")
     for puzz in puzzles:
@@ -498,9 +458,15 @@ def duck_puzzle_analysis():
         print(elapsed_time, end='')
         print(',', finished_puzzle[0].path_cost, end='')
         print(',', finished_puzzle[1])
-
     return 0
 
 
+def single_duck_puzzle():
+    #debugging to find where misplaced action
+    puzzle = make_rand_duckPuzz()
+    #display_Dpuzz(puzzle.get_state())
+
+
+#single_duck_puzzle()
 # eight_puzzle_analysis()
 duck_puzzle_analysis()
