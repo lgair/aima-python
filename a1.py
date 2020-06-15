@@ -9,7 +9,7 @@ import random
 
 # ...
 SOLVED_STATE = (1, 2, 3, 4, 5, 6, 7, 8, 0)
-NUM_RANDOM_MOVES = 30
+NUM_RANDOM_MOVES = 100
 #PYCHARM_DEBUG = True
 
 
@@ -430,7 +430,7 @@ def duck_puzzle_analysis():
     puzzles = make_n_Dpuzz(10)
 
     for puzz in puzzles:
-        display_Dpuzz(puzz.get_state())
+        #display_Dpuzz(puzz.get_state())
         start_time = time.time_ns()
         finished_puzzle = astar_search(puzz)
         elapsed_time = (time.time_ns() - start_time) / 1000000000
