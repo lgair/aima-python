@@ -30,4 +30,4 @@ def rand_graph(p, n):
     return graph
 
 
-print(rand_graph(0.05, 31))
+#print(rand_graph(0.05, 31))
