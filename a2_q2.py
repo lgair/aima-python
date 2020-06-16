@@ -1,6 +1,6 @@
 # Question #2
 
-from a2.a2_q1 import *
+from a2_q1 import *
 
 
 def check_teams(graph, csp_sol):

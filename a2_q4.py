@@ -1,5 +1,5 @@
-# Question 3
-
+# Question no4 Approximate Solution virtually the same as q3 only this time we will be using Min_Conflicts instead of
+# back_track_search q4 uses 105 vertices
 from csp import *
 from a2_q1 import *
 from a2_q2 import *
@@ -241,11 +241,11 @@ def Generate(Num_Graphs):
     for i in range(Num_Graphs):
         if i + 1 > 6:  # probability not to exceed 60%
             return graphs
-        graphs[i] = rand_graph((i + 1) * 0.1, 31)  # change back to 31
+        graphs[i] = rand_graph((i + 1) * 0.1, 105)  # change back to 31
     return graphs
 
 
-def run_q3():
+def run_q4():
     """
     Generate 6 friendship graph problems with 31 vertices with any two nodes having p
     probability of being connected by an edge (they're friends)
@@ -256,12 +256,12 @@ def run_q3():
         stop_condition = False
         start_time = time.time()
 
-        for j in range(31):
+        for j in range(105):
             if not stop_condition:
-                domain = Create_Team_Domain(j + 1, 31)
+                domain = Create_Team_Domain(j + 1, 105)
                 Constraints = MapColoringCSP(domain, Friendship_Graphs[i])
                 AC3(Constraints)
-                csp_sol = (backtracking_search(Constraints, inference=forward_checking))
+                csp_sol = min_conflicts(Constraints, 1000)
 
                 # print out data for solved graph
                 if csp_sol is not None:
@@ -272,22 +272,23 @@ def run_q3():
                     print(", ", Constraints.obtain_unassigned(), end='')
                     Degree = Highest_Degree(Friendship_Graphs[i])
                     print(", ", Degree[0], end='')
-                    print(", ", Degree[1], end='')
-                    print("\n")
+                    print(", ", Degree[1])
+
                     stop_condition = True
 
     return True
 
 
-def Collect_q3_data(n):
-    print("Creating CSV")
+def Collect_q4_data(n):
+    print("Creating CSV for Question 4")
     print("Columns follow: Solve Time, Chromatic Number, #Assigned CSP, #Unassigned CSP, Vertex of "
           "Highest Degree, Max Degree in graph")
     for i in range(n):  # Run run_q3 5x
         print("Batch: ", i)
         print()
-        run_q3()
+        run_q4()
     return 0
 
 
-Collect_q3_data(1)
+Collect_q4_data(3)
+
