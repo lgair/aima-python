@@ -23,7 +23,7 @@ def rand_graph(p, n):
         graph[i] = []  # Create dictionary of size n with nothing in it
     for j in range(n):
         for k in range(j + 1, n):
-            if random.random() < p:
+            if random.random() <= p:
                 # add to corresponding people (vertices) because friendship is symmetrical
                 graph[j].append(k)
                 graph[k].append(j)
